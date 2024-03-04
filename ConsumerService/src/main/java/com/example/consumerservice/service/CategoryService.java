@@ -12,7 +12,7 @@ import java.util.List;
 
 @Service
 public class CategoryService {
-    private static final String SUPPLIER_SERVICE_URL = "http://localhost:8080/categories/";
+    private static final String SUPPLIER_SERVICE_URL = "http://localhost:8080/supplier/categories/";
     private final RestTemplate restTemplate;
 
     @Autowired

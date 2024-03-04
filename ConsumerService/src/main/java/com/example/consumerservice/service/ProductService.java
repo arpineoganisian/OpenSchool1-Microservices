@@ -1,11 +1,13 @@
 package com.example.consumerservice.service;
 
 import com.example.consumerservice.dto.ProductDTO;
+import com.example.consumerservice.exception.InvalidRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
@@ -15,7 +17,7 @@ import java.util.function.Predicate;
 @Service
 public class ProductService {
 
-    private static final String SUPPLIER_SERVICE_URL = "http://localhost:8080/products";
+    private static final String SUPPLIER_SERVICE_URL = "http://localhost:8080/supplier/products";
 
     private final RestTemplate restTemplate;
 
@@ -24,13 +26,13 @@ public class ProductService {
         this.restTemplate = restTemplate;
     }
 
-//    public List<ProductDTO> findAll() {
-//        ResponseEntity<List<ProductDTO>> response = restTemplate
-//                .exchange(SUPPLIER_SERVICE_URL, HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
-//        return response.getBody();
-//    }
+    public List<ProductDTO> findAll(Integer minPrice, Integer maxPrice, String category,
+                                    Integer pageNo, Integer pageSize) {
 
-    public List<ProductDTO> findAll(Integer minPrice, Integer maxPrice, String category) {
+        if ((pageNo == null) ^ (pageSize == null)) {
+            throw new InvalidRequestException("Both page and size should be specified or none of them.");
+        }
+
         ResponseEntity<List<ProductDTO>> response = restTemplate
                 .exchange(SUPPLIER_SERVICE_URL, HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
 
@@ -47,42 +49,60 @@ public class ProductService {
             return minPriceCondition && maxPriceCondition && categoryCondition;
         };
 
-        // Фильтруем продукты с использованием предиката
-        return response.getBody().stream()
+        List<ProductDTO> filteredProducts = response.getBody().stream()
                 .filter(filterPredicate)
                 .toList();
+
+        if (!filteredProducts.isEmpty() && pageNo != null && pageSize != null) {
+            if (pageNo < 0) { throw new InvalidRequestException("Page number cannot be negative");}
+            if (pageSize <= 0) { throw new InvalidRequestException("Page size cannot be less than or equal to zero");}
+            filteredProducts = filteredProducts.stream()
+                    .skip((long) pageNo * pageSize)
+                    .limit(pageSize)
+                    .toList();
+        }
+        return filteredProducts;
     }
 
     public ProductDTO findById(Long id) {
         ResponseEntity<ProductDTO> response = restTemplate
-                .getForEntity(SUPPLIER_SERVICE_URL + id, ProductDTO.class);
+                .getForEntity(SUPPLIER_SERVICE_URL + "/" + id, ProductDTO.class);
         return response.getBody();
     }
 
     public List<ProductDTO> findByName(String name) {
         ResponseEntity<List<ProductDTO>> response = restTemplate
-                .exchange(SUPPLIER_SERVICE_URL, HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
+                .exchange(SUPPLIER_SERVICE_URL,
+                        HttpMethod.GET,
+                        null,
+                        new ParameterizedTypeReference<>() {});
+        if (response.getBody() == null) {
+            return List.of();
+        }
         return response.getBody().stream()
                 .filter(product -> product.getName().toLowerCase().contains(name.toLowerCase()))
                 .toList();
     }
 
-    public void save(ProductDTO product) {
-        restTemplate.postForEntity(SUPPLIER_SERVICE_URL, product, ProductDTO.class);
+    public ProductDTO save(ProductDTO product) {
+        ResponseEntity<ProductDTO> response = restTemplate.postForEntity(SUPPLIER_SERVICE_URL, product, ProductDTO.class);
+        return response.getBody();
     }
 
-    public void update(ProductDTO product) {
-        restTemplate.put(SUPPLIER_SERVICE_URL + product.getId(), product);
+    public void update(ProductDTO product, Long id) {
+        product.setId(id);
+        try {
+            restTemplate.put(SUPPLIER_SERVICE_URL + "/" + id, product);
+        } catch (HttpClientErrorException e) {
+            throw new InvalidRequestException("Product with id " + id + " does not exist");
+        }
     }
 
     public void deleteById(Long id) {
-        restTemplate.delete(SUPPLIER_SERVICE_URL + id);
+        try {
+            restTemplate.delete(SUPPLIER_SERVICE_URL + "/" + id);
+        } catch (HttpClientErrorException e) {
+            throw new InvalidRequestException("Product with id " + id + " does not exist");
+        }
     }
 }
-// TODO написать сервисы с интерфейсом
-//  service
-//  |___impl
-//      |___ProductServiceImpl (class)
-//      |___CategoryServiceImpl (class)
-//  |___ProductService (interface
-//  |___CategoryService (interface)

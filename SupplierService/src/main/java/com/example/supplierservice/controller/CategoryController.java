@@ -18,8 +18,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/categories")
-// TODO изменить маппинг, добавить /api/supplier/
+@RequestMapping("/supplier/categories")
 public class CategoryController {
     CategoryService categoryService;
 
@@ -31,7 +30,7 @@ public class CategoryController {
     @PostMapping
     public ResponseEntity<Void> createCategory(@RequestBody Category category) {
         categoryService.save(category);
-        URI location = URI.create("/categories/" + category.getId());
+        URI location = URI.create("/supplier/categories/" + category.getId());
         return ResponseEntity.created(location).build(); //201
     }
 
@@ -47,9 +46,7 @@ public class CategoryController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Void> updateCategory(@PathVariable Long id, @RequestBody Category category) {
-        //TODO перенести set id в сервис
-        category.setId(id);
-        categoryService.update(category);
+        categoryService.update(category, id);
         return ResponseEntity.accepted().build(); //202
     }
 

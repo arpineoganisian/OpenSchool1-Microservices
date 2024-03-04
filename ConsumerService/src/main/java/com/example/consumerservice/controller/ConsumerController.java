@@ -2,10 +2,13 @@ package com.example.consumerservice.controller;
 
 import com.example.consumerservice.dto.CategoryDTO;
 import com.example.consumerservice.dto.ProductDTO;
+import com.example.consumerservice.exception.InvalidRequestException;
 import com.example.consumerservice.service.CategoryService;
 import com.example.consumerservice.service.ProductService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,12 +23,10 @@ import java.net.URI;
 import java.util.List;
 
 //Возможность добавления нового продукта с указанием категории - ??
-//Реализовать возможность фильтрации продуктов по различным критериям, таким как цена, категория и т. д.
-//Реализовать пагинацию для списка продуктов.
 //Реализовать валидацию данных перед отправкой запросов на сервер.
 //Обработать возможные ошибки при взаимодействии с API микросервиса-источника данных.
 @RestController
-@RequestMapping("/api/consumer/")
+@RequestMapping("/consumer/")
 public class ConsumerController {
 
     private final ProductService productService;
@@ -38,13 +39,15 @@ public class ConsumerController {
     }
 
     @GetMapping("/products")
-    public ResponseEntity<List<ProductDTO>> getAllProducts(
+    public ResponseEntity<?> getAllProducts(
             @RequestParam(name = "min_price", required = false) Integer minPrice,
             @RequestParam(name = "max_price", required = false) Integer maxPrice,
-            @RequestParam(name = "category", required = false) String category
+            @RequestParam(name = "category", required = false) String category,
+            @RequestParam(value = "page", required = false) Integer pageNo,
+            @RequestParam(value = "size", required = false) Integer pageSize
     ) {
-        System.out.println();
-        return ResponseEntity.ok(productService.findAll(minPrice, maxPrice, category)); //200
+        List<ProductDTO> response = productService.findAll(minPrice, maxPrice, category, pageNo, pageSize);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/products/{id}")
@@ -58,6 +61,34 @@ public class ConsumerController {
         return ResponseEntity.ok(products);
     }
 
+    @PostMapping("/products")
+    public ResponseEntity<Void> createProduct(@RequestBody @Valid ProductDTO product,
+                                              BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            throw new InvalidRequestException(bindingResult); //400
+        }
+        ProductDTO saved = productService.save(product);
+        URI location = URI.create("/consumer/products/" + saved.getId());
+        return ResponseEntity.created(location).build(); //201
+    }
+
+    @PutMapping("/products/{id}")
+    public ResponseEntity<Void> updateProduct(@PathVariable Long id,
+                                              @RequestBody @Valid ProductDTO product,
+                                              BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            throw new InvalidRequestException(bindingResult); //400
+        }
+        productService.update(product, id);
+        return ResponseEntity.accepted().build(); //202
+    }
+
+    @DeleteMapping("/products/{id}")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        productService.deleteById(id);
+        return ResponseEntity.noContent().build(); //204
+    }
+
     @GetMapping("/categories")
     public ResponseEntity<List<CategoryDTO>> getAllCategories() {
         return ResponseEntity.ok(categoryService.findAll()); //200
@@ -67,26 +98,5 @@ public class ConsumerController {
     @GetMapping("/categories/{id}")
     public ResponseEntity<CategoryDTO> getCategoryById(@PathVariable Long id) {
         return ResponseEntity.ok(categoryService.findById(id)); //200
-    }
-
-    @PostMapping("/products")
-    public ResponseEntity<Void> createProduct(@RequestBody ProductDTO product) {
-        productService.save(product);
-        URI location = URI.create("/api/consumer/products/" + product.getId());
-        return ResponseEntity.created(location).build(); //201
-    }
-
-    @PutMapping("/products/{id}")
-    public ResponseEntity<Void> updateProduct(@PathVariable Long id, @RequestBody ProductDTO product) {
-        //TODO перенести set id в сервис
-        product.setId(id);
-        productService.update(product);
-        return ResponseEntity.accepted().build(); //202
-    }
-
-    @DeleteMapping("/products/{id}")
-    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
-        productService.deleteById(id);
-        return ResponseEntity.noContent().build(); //204
     }
 }

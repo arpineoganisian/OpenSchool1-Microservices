@@ -2,6 +2,7 @@ package com.example.supplierservice.service;
 
 import com.example.supplierservice.model.Product;
 import com.example.supplierservice.repository.ProductRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,18 +22,27 @@ public class ProductService {
         return productRepository.findAll();
     }
 
+    public List<Product> findAll(Integer pageN, Integer pageSize) {
+        return productRepository.findAll(PageRequest.of(pageN, pageSize)).getContent();
+    }
+
     public Product findById(Long id) {
         return productRepository.findById(id).orElse(null);
     }
 
     @Transactional
-    public void save(Product product) {
-        productRepository.save(product);
+    public Product save(Product product) {
+        return productRepository.save(product);
     }
 
     @Transactional
-    public void update(Product product) {
+    public void update(Product product, Long id) {
+        product.setId(id);
         productRepository.save(product);
+    }
+
+    public boolean existsById(Long id) {
+        return productRepository.existsById(id);
     }
 
     @Transactional

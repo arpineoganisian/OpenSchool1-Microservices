@@ -32,7 +32,8 @@ public class CategoryService {
     }
 
     @Transactional
-    public void update(Category category) {
+    public void update(Category category, Long id) {
+        category.setId(id);
         categoryRepository.save(category);
     }
 

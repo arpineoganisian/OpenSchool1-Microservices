@@ -3,6 +3,7 @@ package com.example.supplierservice.controller;
 import com.example.supplierservice.model.Product;
 import com.example.supplierservice.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,7 +18,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/products")
+@RequestMapping("/supplier/products")
 public class ProductController {
     ProductService productService;
 
@@ -27,10 +28,9 @@ public class ProductController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> createProduct(@RequestBody Product product) {
-        productService.save(product);
-        URI location = URI.create("/products/" + product.getId());
-        return ResponseEntity.created(location).build(); //201
+    public ResponseEntity<Product> createProduct(@RequestBody Product product) {
+        Product saved = productService.save(product);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved); //201
     }
 
     @GetMapping
@@ -45,16 +45,19 @@ public class ProductController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Void> updateProduct(@PathVariable Long id, @RequestBody Product product) {
-        //TODO перенести set id в сервис
-        product.setId(id);
-        productService.update(product);
+        if (!productService.existsById(id)) {
+            return ResponseEntity.badRequest().build(); // 404
+        }
+        productService.update(product, id);
         return ResponseEntity.accepted().build(); //202
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        if (!productService.existsById(id)) {
+            return ResponseEntity.badRequest().build(); // 404
+        }
         productService.deleteById(id);
         return ResponseEntity.noContent().build(); //204
     }
-    //TODO добавить liquibase
 }
