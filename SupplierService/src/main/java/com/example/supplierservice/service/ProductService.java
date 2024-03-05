@@ -2,11 +2,12 @@ package com.example.supplierservice.service;
 
 import com.example.supplierservice.model.Product;
 import com.example.supplierservice.repository.ProductRepository;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -18,12 +19,28 @@ public class ProductService {
         this.productRepository = productRepository;
     }
 
-    public List<Product> findAll() {
-        return productRepository.findAll();
-    }
+    public Page<Product> findAll(Integer minPrice, Integer maxPrice, String category,
+                                 Integer pageNo, Integer pageSize) {
 
-    public List<Product> findAll(Integer pageN, Integer pageSize) {
-        return productRepository.findAll(PageRequest.of(pageN, pageSize)).getContent();
+        Pageable paging = pageNo == null ? Pageable.unpaged() : PageRequest.of(pageNo, pageSize);
+        Specification<Product> specification = Specification.where(null);
+
+        if (minPrice != null) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.greaterThanOrEqualTo(root.get("price"), minPrice));
+        }
+
+        if (maxPrice != null) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.lessThanOrEqualTo(root.get("price"), maxPrice));
+        }
+
+        if (category != null) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.join("category").get("name"), category));
+        }
+
+        return productRepository.findAll(specification, paging);
     }
 
     public Product findById(Long id) {

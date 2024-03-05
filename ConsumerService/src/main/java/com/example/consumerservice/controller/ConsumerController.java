@@ -7,6 +7,7 @@ import com.example.consumerservice.service.CategoryService;
 import com.example.consumerservice.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -39,14 +40,14 @@ public class ConsumerController {
     }
 
     @GetMapping("/products")
-    public ResponseEntity<?> getAllProducts(
+    public ResponseEntity<Page<ProductDTO>> getAllProducts(
             @RequestParam(name = "min_price", required = false) Integer minPrice,
             @RequestParam(name = "max_price", required = false) Integer maxPrice,
             @RequestParam(name = "category", required = false) String category,
             @RequestParam(value = "page", required = false) Integer pageNo,
             @RequestParam(value = "size", required = false) Integer pageSize
     ) {
-        List<ProductDTO> response = productService.findAll(minPrice, maxPrice, category, pageNo, pageSize);
+        Page<ProductDTO> response = productService.findAll(minPrice, maxPrice, category, pageNo, pageSize);
         return ResponseEntity.ok(response);
     }
 

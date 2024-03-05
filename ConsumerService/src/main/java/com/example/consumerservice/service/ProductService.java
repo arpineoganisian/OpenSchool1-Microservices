@@ -2,21 +2,23 @@ package com.example.consumerservice.service;
 
 import com.example.consumerservice.dto.ProductDTO;
 import com.example.consumerservice.exception.InvalidRequestException;
+import com.example.consumerservice.util.JacksonPage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.math.BigDecimal;
 import java.util.List;
-import java.util.function.Predicate;
 
 @Service
 public class ProductService {
-
+//    здесь
+//    private static final String SUPPLIER_SERVICE_URL = "http://supplier:8080/supplier/products";
     private static final String SUPPLIER_SERVICE_URL = "http://localhost:8080/supplier/products";
 
     private final RestTemplate restTemplate;
@@ -26,42 +28,28 @@ public class ProductService {
         this.restTemplate = restTemplate;
     }
 
-    public List<ProductDTO> findAll(Integer minPrice, Integer maxPrice, String category,
+    public Page<ProductDTO> findAll(Integer minPrice, Integer maxPrice, String category,
                                     Integer pageNo, Integer pageSize) {
 
-        if ((pageNo == null) ^ (pageSize == null)) {
+        if ((pageNo == null) ^ (pageSize == null))
             throw new InvalidRequestException("Both page and size should be specified or none of them.");
-        }
+        if (pageNo != null && pageNo < 0)
+            throw new InvalidRequestException("Page number cannot be negative");
+        if (pageNo != null && pageSize <= 0)
+            throw new InvalidRequestException("Page size cannot be less than or equal to zero");
 
-        ResponseEntity<List<ProductDTO>> response = restTemplate
-                .exchange(SUPPLIER_SERVICE_URL, HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(SUPPLIER_SERVICE_URL);
+        if (minPrice != null) builder.queryParam("min_price", minPrice);
+        if (maxPrice != null) builder.queryParam("max_price", maxPrice);
+        if (category != null) builder.queryParam("category", category);
 
-        List<ProductDTO> products = response.getBody();
+        ResponseEntity<JacksonPage<ProductDTO>> response = restTemplate
+                .exchange(builder.toUriString(),
+                        HttpMethod.GET,
+                        null,
+                        new ParameterizedTypeReference<>() {});
 
-        if (products == null) {
-            return List.of();
-        }
-
-        Predicate<ProductDTO> filterPredicate = product -> {
-            boolean minPriceCondition = minPrice == null || product.getPrice().compareTo(BigDecimal.valueOf(minPrice)) >= 0;
-            boolean maxPriceCondition = maxPrice == null || product.getPrice().compareTo(BigDecimal.valueOf(maxPrice)) <= 0;
-            boolean categoryCondition = category == null || product.getCategory().getName().equals(category);
-            return minPriceCondition && maxPriceCondition && categoryCondition;
-        };
-
-        List<ProductDTO> filteredProducts = response.getBody().stream()
-                .filter(filterPredicate)
-                .toList();
-
-        if (!filteredProducts.isEmpty() && pageNo != null && pageSize != null) {
-            if (pageNo < 0) { throw new InvalidRequestException("Page number cannot be negative");}
-            if (pageSize <= 0) { throw new InvalidRequestException("Page size cannot be less than or equal to zero");}
-            filteredProducts = filteredProducts.stream()
-                    .skip((long) pageNo * pageSize)
-                    .limit(pageSize)
-                    .toList();
-        }
-        return filteredProducts;
+        return response.getBody();
     }
 
     public ProductDTO findById(Long id) {

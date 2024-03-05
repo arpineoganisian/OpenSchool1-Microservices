@@ -46,6 +46,11 @@
 			<version>5.11.0</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.liquibase</groupId>
+			<artifactId>liquibase-core</artifactId>
+			<version>4.26.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -60,6 +65,20 @@
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.liquibase</groupId>
+				<artifactId>liquibase-maven-plugin</artifactId>
+				<version>4.5.0</version>
+				<configuration>
+					<changeLogFile>changelog-master.yaml</changeLogFile>
+					<changeLogDirectory>src/main/resources/db</changeLogDirectory>
+<!--				здесь	-->
+					<url>jdbc:postgresql://localhost:5432/openschool</url>
+<!--					<url>jdbc:postgresql://host.docker.internal:5432/openschool</url>-->
+					<username>openschool</username>
+					<password>openschool</password>
 				</configuration>
 			</plugin>
 		</plugins>

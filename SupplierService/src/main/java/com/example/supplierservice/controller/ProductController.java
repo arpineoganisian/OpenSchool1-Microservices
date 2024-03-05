@@ -3,6 +3,7 @@ package com.example.supplierservice.controller;
 import com.example.supplierservice.model.Product;
 import com.example.supplierservice.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -12,10 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.net.URI;
-import java.util.List;
 
 @RestController
 @RequestMapping("/supplier/products")
@@ -34,8 +33,13 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Product>> getAllProducts() {
-        return ResponseEntity.ok(productService.findAll()); //200
+    public ResponseEntity<Page<Product>> getAllProducts(
+            @RequestParam(name = "min_price", required = false) Integer minPrice,
+            @RequestParam(name = "max_price", required = false) Integer maxPrice,
+            @RequestParam(name = "category", required = false) String category,
+            @RequestParam(value = "page", required = false) Integer pageNo,
+            @RequestParam(value = "size", required = false) Integer pageSize) {
+        return ResponseEntity.ok(productService.findAll(minPrice, maxPrice, category, pageNo, pageSize)); //200
     }
 
     @GetMapping("/{id}")
