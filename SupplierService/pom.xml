@@ -74,8 +74,8 @@
 				<configuration>
 					<changeLogFile>changelog-master.yaml</changeLogFile>
 					<changeLogDirectory>src/main/resources/db</changeLogDirectory>
-					<url>jdbc:postgresql://localhost:5432/openschool</url>
-<!--					<url>jdbc:postgresql://host.docker.internal:5432/openschool</url>-->
+<!--					<url>jdbc:postgresql://localhost:5432/openschool</url>-->
+					<url>jdbc:postgresql://host.docker.internal:5432/openschool</url>
 					<username>openschool</username>
 					<password>openschool</password>
 				</configuration>

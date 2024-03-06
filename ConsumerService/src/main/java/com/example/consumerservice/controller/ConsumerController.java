@@ -24,9 +24,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
-//Возможность добавления нового продукта с указанием категории - ??
-//Реализовать валидацию данных перед отправкой запросов на сервер.
-//Обработать возможные ошибки при взаимодействии с API микросервиса-источника данных.
 @RestController
 @RequestMapping("/consumer/")
 public class ConsumerController {

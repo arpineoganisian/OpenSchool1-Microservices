@@ -20,8 +20,8 @@ import java.util.Optional;
 
 @Service
 public class ProductService {
-//    private static final String SUPPLIER_SERVICE_URL = "http://supplier:8080/supplier/products";
-    private static final String SUPPLIER_SERVICE_URL = "http://localhost:8080/supplier/products";
+    private static final String SUPPLIER_SERVICE_URL = "http://supplier:8080/supplier/products";
+//    private static final String SUPPLIER_SERVICE_URL = "http://localhost:8080/supplier/products";
 
     private final RestTemplate restTemplate;
 
