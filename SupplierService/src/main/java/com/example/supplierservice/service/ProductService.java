@@ -1,6 +1,8 @@
 package com.example.supplierservice.service;
 
+import com.example.supplierservice.model.Category;
 import com.example.supplierservice.model.Product;
+import com.example.supplierservice.repository.CategoryRepository;
 import com.example.supplierservice.repository.ProductRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,15 +16,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
 
-    public ProductService(ProductRepository productRepository) {
+    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     public Page<Product> findAll(Integer minPrice, Integer maxPrice, String category,
                                  Integer pageNo, Integer pageSize) {
 
-        Pageable paging = pageNo == null ? Pageable.unpaged() : PageRequest.of(pageNo, pageSize);
+        Pageable paging = (pageNo == null || pageSize == null)
+                ? Pageable.unpaged() : PageRequest.of(pageNo, pageSize);
         Specification<Product> specification = Specification.where(null);
 
         if (minPrice != null) {
@@ -37,7 +42,10 @@ public class ProductService {
 
         if (category != null) {
             specification = specification.and((root, query, criteriaBuilder) ->
-                    criteriaBuilder.equal(root.join("category").get("name"), category));
+                    criteriaBuilder.equal(
+                            criteriaBuilder.lower(root.get("category").get("name")),
+                            category.toLowerCase())
+            );
         }
 
         return productRepository.findAll(specification, paging);
@@ -49,6 +57,9 @@ public class ProductService {
 
     @Transactional
     public Product save(Product product) {
+        Category category = product.getCategory();
+        if (category != null && categoryRepository.findById(category.getId()).isEmpty())
+            return null;
         return productRepository.save(product);
     }
 

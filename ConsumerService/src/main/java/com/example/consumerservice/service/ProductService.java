@@ -10,14 +10,16 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ProductService {
-//    здесь
 //    private static final String SUPPLIER_SERVICE_URL = "http://supplier:8080/supplier/products";
     private static final String SUPPLIER_SERVICE_URL = "http://localhost:8080/supplier/products";
 
@@ -28,26 +30,34 @@ public class ProductService {
         this.restTemplate = restTemplate;
     }
 
-    public Page<ProductDTO> findAll(Integer minPrice, Integer maxPrice, String category,
-                                    Integer pageNo, Integer pageSize) {
+    public Page<ProductDTO> findAll(Optional<Integer> minPrice, Optional<Integer> maxPrice, Optional<String> category,
+                                    Optional<Integer> pageNo, Optional<Integer> pageSize) {
 
-        if ((pageNo == null) ^ (pageSize == null))
+        if (pageNo.isPresent() != pageSize.isPresent()) // задан один параметр без другого
             throw new InvalidRequestException("Both page and size should be specified or none of them.");
-        if (pageNo != null && pageNo < 0)
-            throw new InvalidRequestException("Page number cannot be negative");
-        if (pageNo != null && pageSize <= 0)
-            throw new InvalidRequestException("Page size cannot be less than or equal to zero");
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(SUPPLIER_SERVICE_URL);
-        if (minPrice != null) builder.queryParam("min_price", minPrice);
-        if (maxPrice != null) builder.queryParam("max_price", maxPrice);
-        if (category != null) builder.queryParam("category", category);
+        pageNo.ifPresent(page -> {
+            if (page < 0) throw new InvalidRequestException("Page number cannot be negative"); });
+        pageSize.ifPresent(size -> {
+            if (size <= 0) throw new InvalidRequestException("Page size cannot be less than or equal to zero"); });
 
-        ResponseEntity<JacksonPage<ProductDTO>> response = restTemplate
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(SUPPLIER_SERVICE_URL)
+                .queryParamIfPresent("min_price", minPrice)
+                .queryParamIfPresent("max_price", maxPrice)
+                .queryParamIfPresent("category", category)
+                .queryParamIfPresent("page", pageNo)
+                .queryParamIfPresent("size", pageSize);
+
+        ResponseEntity<JacksonPage<ProductDTO>> response;
+        try {
+            response = restTemplate
                 .exchange(builder.toUriString(),
                         HttpMethod.GET,
                         null,
                         new ParameterizedTypeReference<>() {});
+        } catch (RestClientException e) { // JacksonPage не может быть создан из пустой Page
+            return new JacksonPage<>(Collections.emptyList());
+        }
 
         return response.getBody();
     }
@@ -73,7 +83,12 @@ public class ProductService {
     }
 
     public ProductDTO save(ProductDTO product) {
-        ResponseEntity<ProductDTO> response = restTemplate.postForEntity(SUPPLIER_SERVICE_URL, product, ProductDTO.class);
+        ResponseEntity<ProductDTO> response;
+        try {
+            response = restTemplate.postForEntity(SUPPLIER_SERVICE_URL, product, ProductDTO.class);
+        } catch (HttpClientErrorException e) {
+            throw new InvalidRequestException("Invalid product data");
+        }
         return response.getBody();
     }
 

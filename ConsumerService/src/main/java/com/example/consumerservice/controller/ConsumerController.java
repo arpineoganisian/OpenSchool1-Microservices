@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
 //Возможность добавления нового продукта с указанием категории - ??
 //Реализовать валидацию данных перед отправкой запросов на сервер.
@@ -47,7 +48,8 @@ public class ConsumerController {
             @RequestParam(value = "page", required = false) Integer pageNo,
             @RequestParam(value = "size", required = false) Integer pageSize
     ) {
-        Page<ProductDTO> response = productService.findAll(minPrice, maxPrice, category, pageNo, pageSize);
+        Page<ProductDTO> response = productService.findAll(Optional.ofNullable(minPrice), Optional.ofNullable(maxPrice),
+                Optional.ofNullable(category), Optional.ofNullable(pageNo), Optional.ofNullable(pageSize));
         return ResponseEntity.ok(response);
     }
 

@@ -12,9 +12,8 @@ import java.util.List;
 
 @Service
 public class CategoryService {
-//    здесь
-//    private static final String SUPPLIER_SERVICE_URL = "http://supplier:8080/supplier/categories/";
-    private static final String SUPPLIER_SERVICE_URL = "http://localhost:8080/supplier/categories/";
+//    private static final String SUPPLIER_SERVICE_URL = "http://supplier:8080/supplier/categories";
+    private static final String SUPPLIER_SERVICE_URL = "http://localhost:8080/supplier/categories";
     private final RestTemplate restTemplate;
 
     @Autowired
@@ -30,7 +29,7 @@ public class CategoryService {
 
     public CategoryDTO findById(Long id) {
         ResponseEntity<CategoryDTO> response = restTemplate
-                .getForEntity(SUPPLIER_SERVICE_URL + id, CategoryDTO.class);
+                .getForEntity(SUPPLIER_SERVICE_URL + "/" + id, CategoryDTO.class);
         return response.getBody();
     }
 }

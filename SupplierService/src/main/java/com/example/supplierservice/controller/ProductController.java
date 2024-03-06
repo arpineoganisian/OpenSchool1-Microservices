@@ -29,6 +29,9 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<Product> createProduct(@RequestBody Product product) {
         Product saved = productService.save(product);
+        if (saved == null) {
+            return ResponseEntity.badRequest().build(); // 400
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(saved); //201
     }
 
